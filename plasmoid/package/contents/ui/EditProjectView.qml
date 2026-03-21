@@ -19,6 +19,14 @@ Item {
     property bool   showToday: project ? ((project.display_preferences || {}).show_today       || false) : true
     property bool   showWeek:  project ? ((project.display_preferences || {}).show_week        || false) : false
     property bool   showMonth: project ? ((project.display_preferences || {}).show_month       || false) : false
+    property bool   saveInProgress: false
+
+    property string savedName:  ""
+    property string savedColor: "#3498db"
+    property bool   savedShowTotal: true
+    property bool   savedShowToday: true
+    property bool   savedShowWeek:  false
+    property bool   savedShowMonth: false
 
     onProjectChanged: syncFromProject()
 
@@ -31,22 +39,33 @@ Item {
         showToday = prefs.show_today       || false
         showWeek  = prefs.show_week        || false
         showMonth = prefs.show_month       || false
+        markCurrentStateSaved()
+    }
+
+    function markCurrentStateSaved() {
+        savedName = editName
+        savedColor = editColor
+        savedShowTotal = showTotal
+        savedShowToday = showToday
+        savedShowWeek = showWeek
+        savedShowMonth = showMonth
     }
 
     property bool isDirty: {
         if (!project) return false
-        var prefs = project.display_preferences || {}
-        return editName  !== project.name  ||
-               editColor !== project.color ||
-               showTotal !== (prefs.show_total_time || false) ||
-               showToday !== (prefs.show_today       || false) ||
-               showWeek  !== (prefs.show_week        || false) ||
-               showMonth !== (prefs.show_month       || false)
+        return editName  !== savedName  ||
+               editColor !== savedColor ||
+               showTotal !== savedShowTotal ||
+               showToday !== savedShowToday ||
+               showWeek  !== savedShowWeek ||
+               showMonth !== savedShowMonth
     }
 
     function save() {
-        if (!project || !isDirty) return
-        root.cmdUpdateProject(project.id, {
+        if (!project || !isDirty || saveInProgress) return
+        var targetProjectId = project.id
+        saveInProgress = true
+        root.cmdUpdateProject(targetProjectId, {
             name:  editName,
             color: editColor,
             display_preferences: {
@@ -54,6 +73,11 @@ Item {
                 show_today:      showToday,
                 show_week:       showWeek,
                 show_month:      showMonth
+            }
+        }, function(result) {
+            editRoot.saveInProgress = false
+            if (result && result.ok === true && editRoot.project && editRoot.project.id === targetProjectId) {
+                editRoot.markCurrentStateSaved()
             }
         })
     }
@@ -95,15 +119,22 @@ Item {
             }
 
             QQC2.Label {
-                visible: editRoot.isDirty
+                visible: editRoot.isDirty && !editRoot.saveInProgress
                 text: i18n("Unsaved")
+                color: Kirigami.Theme.neutralTextColor
+                font: Kirigami.Theme.smallFont
+            }
+
+            QQC2.Label {
+                visible: editRoot.saveInProgress
+                text: i18n("Saving...")
                 color: Kirigami.Theme.neutralTextColor
                 font: Kirigami.Theme.smallFont
             }
 
             QQC2.ToolButton {
                 icon.name: "document-save"
-                enabled: editRoot.isDirty
+                enabled: editRoot.isDirty && !editRoot.saveInProgress
                 onClicked: editRoot.save()
                 QQC2.ToolTip {
                     visible: parent.hovered

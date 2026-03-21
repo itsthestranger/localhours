@@ -45,6 +45,7 @@ PlasmoidItem {
 
     // Internal: monotonically increasing sequence number for unique exec source IDs
     property int  _cmdSeq: 0
+    property var  _pendingCmdCallbacks: ({})
 
     // -------------------------------------------------------------------------
     // D-Bus / process bridge via P5Support executable engine
@@ -57,6 +58,7 @@ PlasmoidItem {
         onNewData: function(source, data) {
             var stdout = (data["stdout"] || "").trim()
             var stderr = (data["stderr"] || "").trim()
+            var parsed = null
 
             if (stderr) {
                 console.warn("[TimeTracker] stderr:", stderr)
@@ -64,13 +66,15 @@ PlasmoidItem {
 
             if (stdout) {
                 try {
-                    var parsed = JSON.parse(stdout)
+                    parsed = JSON.parse(stdout)
                     if (parsed.projects !== undefined) {
                         root._applyData(parsed)
                         root.daemonAvailable = true
                         root._refreshPending = false
+                        root._resolveCmdCallback(source, { ok: true, data: parsed })
                     } else if (parsed.ok === true) {
                         root.daemonAvailable = true
+                        root._resolveCmdCallback(source, parsed)
                         // Schedule a follow-up refresh to pick up the mutation result.
                         // Qt.callLater defers until the current event loop iteration
                         // completes, avoiding any re-entrancy issues.
@@ -79,11 +83,13 @@ PlasmoidItem {
                     } else if (parsed.ok === false) {
                         console.warn("[LocalHours] operation failed:", parsed.error || "Unknown error")
                         root.daemonAvailable = true
+                        root._resolveCmdCallback(source, parsed)
                         root._refreshPending = true
                         Qt.callLater(function() { root._run("get") })
                     } else if (parsed.error) {
                         console.warn("[LocalHours] daemon error:", parsed.error)
                         root.daemonAvailable = false
+                        root._resolveCmdCallback(source, { ok: false, error: parsed.error })
                         root._refreshPending = false
                     }
                 } catch (e) {
@@ -91,13 +97,42 @@ PlasmoidItem {
                 }
             }
 
+            if (parsed === null) {
+                root._resolveCmdCallback(source, {
+                    ok: false,
+                    error: i18n("No parseable daemon response")
+                })
+            }
+
             executable.disconnectSource(source)
         }
     }
 
-    function _run(args) {
+    function _extractCmdSeq(source) {
+        var m = /#seq=(\d+)$/.exec(source || "")
+        return m ? m[1] : ""
+    }
+
+    function _resolveCmdCallback(source, result) {
+        var seqKey = root._extractCmdSeq(source)
+        if (!seqKey) return
+        var cb = root._pendingCmdCallbacks[seqKey]
+        if (!cb) return
+        delete root._pendingCmdCallbacks[seqKey]
+        try {
+            cb(result)
+        } catch (e) {
+            console.warn("[LocalHours] callback handling failed:", e)
+        }
+    }
+
+    function _run(args, onDone) {
         root._cmdSeq += 1
-        var cmd = "python3 " + clientScript + " " + args + " #seq=" + root._cmdSeq
+        var seqKey = String(root._cmdSeq)
+        var cmd = "python3 " + clientScript + " " + args + " #seq=" + seqKey
+        if (onDone) {
+            root._pendingCmdCallbacks[seqKey] = onDone
+        }
         executable.connectSource(cmd)
     }
 
@@ -262,9 +297,9 @@ PlasmoidItem {
         _run('add "' + n + '" "' + c + '"')
     }
 
-    function cmdUpdateProject(projectId, dataObj) {
+    function cmdUpdateProject(projectId, dataObj, onDone) {
         var j = JSON.stringify(dataObj).replace(/\\/g, "\\\\").replace(/"/g, '\\"')
-        _run('update "' + projectId + '" "' + j + '"')
+        _run('update "' + projectId + '" "' + j + '"', onDone)
     }
 
     function cmdDeleteProject(projectId) {
