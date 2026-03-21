@@ -1,1 +1,5 @@
 backlog/
+
+plasmoid/package/contents/backend/__pycache__/
+
+*.pyc
