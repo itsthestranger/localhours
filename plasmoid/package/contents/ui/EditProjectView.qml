@@ -27,8 +27,21 @@ Item {
     property bool   savedShowToday: true
     property bool   savedShowWeek:  false
     property bool   savedShowMonth: false
+    property string activeProjectId: ""
 
-    onProjectChanged: syncFromProject()
+    onProjectChanged: {
+        if (!project) {
+            activeProjectId = ""
+            clearSessionEdit()
+            return
+        }
+        var switchedProject = activeProjectId !== project.id
+        activeProjectId = project.id
+        if (switchedProject || (!isDirty && !saveInProgress)) {
+            syncFromProject()
+        }
+        syncEditingSessionSelection()
+    }
 
     function syncFromProject() {
         if (!project) return
@@ -83,8 +96,52 @@ Item {
     }
 
     property int    editingSessionIndex: -1
+    property string editingSessionStartKey: ""
+    property string editingSessionEndKey: ""
     property string editSessionStart:    ""
     property string editSessionEnd:      ""
+
+    function clearSessionEdit() {
+        editingSessionIndex = -1
+        editingSessionStartKey = ""
+        editingSessionEndKey = ""
+    }
+
+    function resolveSessionIndex(startIso, endIso, preferredIndex) {
+        if (!project) return -1
+        var sessions = project.sessions || []
+
+        if (preferredIndex >= 0 && preferredIndex < sessions.length) {
+            var preferred = sessions[preferredIndex]
+            if (preferred.start === startIso && preferred.end === endIso) {
+                return preferredIndex
+            }
+        }
+
+        for (var i = 0; i < sessions.length; i++) {
+            if (sessions[i].start === startIso && sessions[i].end === endIso) {
+                return i
+            }
+        }
+        return -1
+    }
+
+    function syncEditingSessionSelection() {
+        if (editingSessionStartKey === "" && editingSessionEndKey === "") {
+            editingSessionIndex = -1
+            return
+        }
+        var resolved = resolveSessionIndex(
+            editingSessionStartKey,
+            editingSessionEndKey,
+            editingSessionIndex
+        )
+        if (resolved >= 0) {
+            editingSessionIndex = resolved
+        } else {
+            clearSessionEdit()
+        }
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -101,8 +158,7 @@ Item {
             QQC2.ToolButton {
                 icon.name: "arrow-left"
                 onClicked: {
-                    root.inListView = true
-                    root.editingProject = null
+                    root.closeProjectEditor()
                 }
                 QQC2.ToolTip {
                     visible: parent.hovered
@@ -301,17 +357,35 @@ Item {
                         projectId:     editRoot.project ? editRoot.project.id : ""
                         isEditing:     editRoot.editingSessionIndex === index
 
-                        onRequestEdit:   editRoot.editingSessionIndex =
-                            (editRoot.editingSessionIndex === index ? -1 : index)
+                        onRequestEdit: {
+                            if (editRoot.editingSessionIndex === index) {
+                                editRoot.clearSessionEdit()
+                            } else {
+                                editRoot.editingSessionIndex = index
+                                editRoot.editingSessionStartKey = modelData.start
+                                editRoot.editingSessionEndKey = modelData.end
+                            }
+                        }
                         onRequestDelete: {
                             sessionDeleteDialog.targetIndex = index
+                            sessionDeleteDialog.targetStart = modelData.start
+                            sessionDeleteDialog.targetEnd = modelData.end
                             sessionDeleteDialog.open()
                         }
                         onCommitEdit: function(newStart, newEnd) {
-                            root.cmdUpdateSession(projectId, sessionIndex, newStart, newEnd)
-                            editRoot.editingSessionIndex = -1
+                            var resolvedIndex = editRoot.resolveSessionIndex(
+                                modelData.start,
+                                modelData.end,
+                                sessionIndex
+                            )
+                            if (resolvedIndex >= 0) {
+                                root.cmdUpdateSession(projectId, resolvedIndex, newStart, newEnd)
+                            } else {
+                                console.warn("[LocalHours] Session changed before save; ignoring stale edit commit.")
+                            }
+                            editRoot.clearSessionEdit()
                         }
-                        onCancelEdit: editRoot.editingSessionIndex = -1
+                        onCancelEdit: editRoot.clearSessionEdit()
                     }
                 }
 
@@ -333,14 +407,27 @@ Item {
     Kirigami.PromptDialog {
         id: sessionDeleteDialog
         property int targetIndex: -1
+        property string targetStart: ""
+        property string targetEnd: ""
         title: i18n("Delete Session")
         subtitle: i18n("Remove this session from the history? This cannot be undone.")
         standardButtons: Kirigami.Dialog.Ok | Kirigami.Dialog.Cancel
         onAccepted: {
-            if (targetIndex >= 0 && editRoot.project)
-                root.cmdDeleteSession(editRoot.project.id, targetIndex)
+            var resolvedIndex = editRoot.resolveSessionIndex(targetStart, targetEnd, targetIndex)
+            if (resolvedIndex >= 0 && editRoot.project) {
+                root.cmdDeleteSession(editRoot.project.id, resolvedIndex)
+            } else {
+                console.warn("[LocalHours] Session changed before delete confirmation; ignoring stale delete.")
+            }
             targetIndex = -1
+            targetStart = ""
+            targetEnd = ""
+            editRoot.clearSessionEdit()
         }
-        onRejected: targetIndex = -1
+        onRejected: {
+            targetIndex = -1
+            targetStart = ""
+            targetEnd = ""
+        }
     }
 }

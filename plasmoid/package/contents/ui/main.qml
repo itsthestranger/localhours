@@ -37,6 +37,7 @@ PlasmoidItem {
     property var  activeTracking: null   // { project_id, start_timestamp } or null
     property int  elapsedSeconds: 0
     property bool inListView:     true
+    property string editingProjectId: ""
     property var  editingProject: null
     property bool daemonAvailable: false
 
@@ -190,9 +191,44 @@ PlasmoidItem {
     // -------------------------------------------------------------------------
     // Data helpers
     // -------------------------------------------------------------------------
+    function _findProjectById(projectId) {
+        for (var i = 0; i < root.projects.length; i++) {
+            if (root.projects[i].id === projectId) {
+                return root.projects[i]
+            }
+        }
+        return null
+    }
+
+    function openProjectEditor(projectId) {
+        root.editingProjectId = projectId
+        root.editingProject = root._findProjectById(projectId)
+        if (root.editingProject) {
+            root.inListView = false
+        }
+    }
+
+    function closeProjectEditor() {
+        root.inListView = true
+        root.editingProjectId = ""
+        root.editingProject = null
+    }
+
     function _applyData(data) {
         root.projects = data.projects || []
         root.activeTracking = data.active_tracking || null
+
+        if (root.editingProjectId !== "") {
+            var freshProject = root._findProjectById(root.editingProjectId)
+            if (freshProject) {
+                root.editingProject = freshProject
+            } else {
+                root.closeProjectEditor()
+            }
+        } else {
+            root.editingProject = null
+        }
+
         if (root.activeTracking) {
             var start = new Date(root.activeTracking.start_timestamp)
             root.elapsedSeconds = Math.max(0,

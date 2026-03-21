@@ -123,8 +123,7 @@ Item {
             enabled:   project !== null
             onClicked: {
                 if (!project) return
-                root.editingProject = project
-                root.inListView = false
+                root.openProjectEditor(project.id)
             }
             QQC2.ToolTip {
                 visible: parent.hovered
