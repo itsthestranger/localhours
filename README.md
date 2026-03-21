@@ -47,6 +47,13 @@ The installer performs:
 3. User service install and start (`localhours.service`)
 4. D-Bus responsiveness check
 
+
+After running the installer you might have to add the widget. For this:
+
+1. Right-click on your taskbar.
+2. Select 'Add or Manage Widgets...'
+3. Add the LocalHours Widget
+
 ## Python Dependency Strategy
 
 Preferred package sources:
