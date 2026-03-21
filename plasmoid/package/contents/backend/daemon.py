@@ -9,6 +9,7 @@ import uuid
 import signal
 import logging
 import sys
+import re
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
@@ -26,6 +27,7 @@ DBUS_NAME = "org.kde.plasma.localhours"
 DBUS_PATH = "/org/kde/plasma/localhours"
 DEFAULT_DATA_PATH = Path.home() / ".local/share/localhours/data.json"
 DEFAULT_MAX_HOURS = 12
+HEX_COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 DEFAULT_DISPLAY_PREFERENCES = {
     "show_total_time": True,
     "show_today": True,
@@ -222,6 +224,17 @@ class TimeTrackerDaemon:
         return parsed.astimezone(timezone.utc)
 
     @staticmethod
+    def _normalize_color(value) -> str:
+        if not isinstance(value, str):
+            raise ValueError("color must be a string")
+        cleaned = value.strip()
+        if cleaned == "":
+            return "#3498db"
+        if not HEX_COLOR_RE.fullmatch(cleaned):
+            raise ValueError("color must be a hex value like #RRGGBB")
+        return cleaned
+
+    @staticmethod
     def _normalize_display_preferences(raw_prefs) -> dict:
         prefs = dict(DEFAULT_DISPLAY_PREFERENCES)
         if isinstance(raw_prefs, dict):
@@ -375,12 +388,22 @@ class TimeTrackerDaemon:
         except json.JSONDecodeError as exc:
             logging.error("UpdateProject: invalid JSON: %s", exc)
             return self._result_error(f"Invalid JSON: {exc}")
+        if not isinstance(updates, dict):
+            return self._result_error("Update payload must be an object")
         for project in self._data["projects"]:
             if project["id"] == project_id:
                 if "name" in updates:
-                    project["name"] = updates["name"]
+                    if not isinstance(updates["name"], str):
+                        return self._result_error("name must be a string")
+                    name = updates["name"].strip()
+                    if not name:
+                        return self._result_error("Project name cannot be empty")
+                    project["name"] = name
                 if "color" in updates:
-                    project["color"] = updates["color"]
+                    try:
+                        project["color"] = self._normalize_color(updates["color"])
+                    except ValueError as exc:
+                        return self._result_error(str(exc))
                 if "display_preferences" in updates:
                     if not isinstance(updates["display_preferences"], dict):
                         return self._result_error("display_preferences must be an object")
@@ -414,11 +437,24 @@ class TimeTrackerDaemon:
 
     def UpdateSession(self, project_id: str, session_index: int, start_time: str, end_time: str) -> str:
         """Overwrite a specific session's start/end timestamps."""
+        if not self._is_valid_timestamp(start_time):
+            return self._result_error("start_time must be a valid ISO timestamp with timezone")
+        if not self._is_valid_timestamp(end_time):
+            return self._result_error("end_time must be a valid ISO timestamp with timezone")
+
+        start_dt = self._parse_timestamp(start_time)
+        end_dt = self._parse_timestamp(end_time)
+        if end_dt <= start_dt:
+            return self._result_error("end_time must be after start_time")
+
+        canonical_start = start_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+        canonical_end = end_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
         for project in self._data["projects"]:
             if project["id"] == project_id:
                 sessions = project["sessions"]
                 if 0 <= session_index < len(sessions):
-                    sessions[session_index] = {"start": start_time, "end": end_time}
+                    sessions[session_index] = {"start": canonical_start, "end": canonical_end}
                     logging.info(
                         "Updated session %d for project '%s'", session_index, project["name"]
                     )
