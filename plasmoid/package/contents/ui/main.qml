@@ -329,17 +329,10 @@ PlasmoidItem {
     // D-Bus command wrappers
     // -------------------------------------------------------------------------
     function cmdStartTracker(projectId) {
-        root.activeTracking = {
-            project_id: projectId,
-            start_timestamp: new Date().toISOString().replace(/\.\d{3}Z$/, "Z")
-        }
-        root.elapsedSeconds = 0
         _run(["start", projectId])
     }
 
     function cmdStopTracker() {
-        root.activeTracking = null
-        root.elapsedSeconds = 0
         _run(["stop"])
     }
 
