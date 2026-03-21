@@ -1,7 +1,6 @@
 [Unit]
 Description=KDE LocalHours D-Bus Daemon
-# Documentation needs to be added still
-# Documentation=
+Documentation=https://github.com/itsthestranger/localhours#readme
 After=graphical-session.target
 PartOf=graphical-session.target
 # Prevent a bad data file from killing the service in a tight loop

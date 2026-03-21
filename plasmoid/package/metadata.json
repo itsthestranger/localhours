@@ -14,7 +14,7 @@
         "License": "MIT",
         "Name": "LocalHours",
         "Version": "1.0.0",
-        "Website": ""
+        "Website": "https://github.com/itsthestranger/localhours"
     },
     "X-Plasma-API-Minimum-Version": "6.0",
     "X-Plasma-NotificationArea": "true",
