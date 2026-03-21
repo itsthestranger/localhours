@@ -101,7 +101,6 @@ Item {
             QQC2.ToolButton {
                 icon.name: "arrow-left"
                 onClicked: {
-                    if (editRoot.isDirty) editRoot.save()
                     root.inListView = true
                     root.editingProject = null
                 }
@@ -177,7 +176,6 @@ Item {
                         Layout.fillWidth: true
                         text: editRoot.editName
                         onTextChanged: editRoot.editName = text
-                        onEditingFinished: editRoot.save()
                     }
                 }
 
@@ -209,7 +207,6 @@ Item {
                             var val = text.startsWith("#") ? text : "#" + text
                             if (/^#[0-9a-fA-F]{6}$/.test(val)) {
                                 editRoot.editColor = val
-                                editRoot.save()
                             }
                         }
                     }
@@ -240,7 +237,6 @@ Item {
                                 onClicked: {
                                     editRoot.editColor = modelData
                                     colorHexField.text = modelData
-                                    editRoot.save()
                                 }
                             }
                         }
@@ -274,7 +270,6 @@ Item {
                             checked: modelData.get()
                             onToggled: {
                                 modelData.set(checked)
-                                editRoot.save()
                             }
                         }
                     }
