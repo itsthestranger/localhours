@@ -79,13 +79,13 @@ PlasmoidItem {
                         // Qt.callLater defers until the current event loop iteration
                         // completes, avoiding any re-entrancy issues.
                         root._refreshPending = true
-                        Qt.callLater(function() { root._run("get") })
+                        Qt.callLater(function() { root._run(["get"]) })
                     } else if (parsed.ok === false) {
                         console.warn("[LocalHours] operation failed:", parsed.error || "Unknown error")
                         root.daemonAvailable = true
                         root._resolveCmdCallback(source, parsed)
                         root._refreshPending = true
-                        Qt.callLater(function() { root._run("get") })
+                        Qt.callLater(function() { root._run(["get"]) })
                     } else if (parsed.error) {
                         console.warn("[LocalHours] daemon error:", parsed.error)
                         root.daemonAvailable = false
@@ -126,10 +126,26 @@ PlasmoidItem {
         }
     }
 
+    function _shellQuote(value) {
+        var s = String(value)
+        return "'" + s.replace(/'/g, "'\\''") + "'"
+    }
+
     function _run(args, onDone) {
+        var argv = []
+        if (Array.isArray(args)) {
+            argv = args
+        } else if (args !== undefined && args !== null && String(args).trim() !== "") {
+            argv = [args]
+        }
+
         root._cmdSeq += 1
         var seqKey = String(root._cmdSeq)
-        var cmd = "python3 " + clientScript + " " + args + " #seq=" + seqKey
+        var parts = [_shellQuote("python3"), _shellQuote(clientScript)]
+        for (var i = 0; i < argv.length; i++) {
+            parts.push(_shellQuote(argv[i]))
+        }
+        var cmd = parts.join(" ") + " #seq=" + seqKey
         if (onDone) {
             root._pendingCmdCallbacks[seqKey] = onDone
         }
@@ -165,7 +181,7 @@ PlasmoidItem {
             if (!root._refreshPending) {
                 var pollInterval = root.activeTracking ? 5 : 15
                 if (tickCount % pollInterval === 0) {
-                    root._run("get")
+                    root._run(["get"])
                 }
             }
         }
@@ -282,37 +298,33 @@ PlasmoidItem {
             start_timestamp: new Date().toISOString().replace(/\.\d{3}Z$/, "Z")
         }
         root.elapsedSeconds = 0
-        _run('start "' + projectId + '"')
+        _run(["start", projectId])
     }
 
     function cmdStopTracker() {
         root.activeTracking = null
         root.elapsedSeconds = 0
-        _run("stop")
+        _run(["stop"])
     }
 
     function cmdAddProject(name, color) {
-        var n = name.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
-        var c = color.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
-        _run('add "' + n + '" "' + c + '"')
+        _run(["add", name, color])
     }
 
     function cmdUpdateProject(projectId, dataObj, onDone) {
-        var j = JSON.stringify(dataObj).replace(/\\/g, "\\\\").replace(/"/g, '\\"')
-        _run('update "' + projectId + '" "' + j + '"', onDone)
+        _run(["update", projectId, JSON.stringify(dataObj)], onDone)
     }
 
     function cmdDeleteProject(projectId) {
-        _run('delete "' + projectId + '"')
+        _run(["delete", projectId])
     }
 
     function cmdUpdateSession(projectId, index, startIso, endIso) {
-        _run('update-session "' + projectId + '" ' + index +
-             ' "' + startIso + '" "' + endIso + '"')
+        _run(["update-session", projectId, String(index), startIso, endIso])
     }
 
     function cmdDeleteSession(projectId, index) {
-        _run('delete-session "' + projectId + '" ' + index)
+        _run(["delete-session", projectId, String(index)])
     }
 
     function cmdSetSettings() {
@@ -320,8 +332,7 @@ PlasmoidItem {
             data_path: (root.configDataFilePath || "").trim(),
             max_session_hours: root.configMaxSessionHours
         }
-        var j = JSON.stringify(settingsObj).replace(/\\/g, "\\\\").replace(/"/g, '\\"')
-        _run('set-settings "' + j + '"')
+        _run(["set-settings", JSON.stringify(settingsObj)])
     }
 
     // -------------------------------------------------------------------------
@@ -373,6 +384,6 @@ PlasmoidItem {
     // -------------------------------------------------------------------------
     Component.onCompleted: {
         root.cmdSetSettings()
-        root._run("get")
+        root._run(["get"])
     }
 }
