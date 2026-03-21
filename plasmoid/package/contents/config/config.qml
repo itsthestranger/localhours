@@ -27,7 +27,7 @@ KCM.SimpleKCM {
                 placeholderText: i18n("Default: ~/.local/share/localhours/data.json")
                 QQC2.ToolTip {
                     visible: parent.hovered
-                    text: i18n("Leave empty to use the default XDG data directory path.\nChange this if you want to store data in a synced folder (e.g. Nextcloud).")
+                    text: i18n("Leave empty to use the default path (~/.local/share/localhours/data.json).\nChange this if you want to store data in a synced folder (e.g. Nextcloud).")
                 }
             }
 

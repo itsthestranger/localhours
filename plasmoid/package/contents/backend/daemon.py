@@ -479,8 +479,14 @@ class TimeTrackerDaemon:
             logging.error("SetSettings: invalid JSON: %s", exc)
             return self._result_error(f"Invalid JSON: {exc}")
         reload_needed = False
-        if "data_path" in settings and settings["data_path"]:
-            new_path = Path(settings["data_path"]).expanduser()
+        if "data_path" in settings:
+            raw_path = settings["data_path"]
+            if raw_path is None:
+                raw_path = ""
+            if not isinstance(raw_path, str):
+                return self._result_error("data_path must be a string")
+            cleaned_path = raw_path.strip()
+            new_path = DEFAULT_DATA_PATH if cleaned_path == "" else Path(cleaned_path).expanduser()
             if new_path != self._data_path:
                 self._data_path = new_path
                 reload_needed = True
