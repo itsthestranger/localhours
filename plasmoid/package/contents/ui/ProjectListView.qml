@@ -70,11 +70,8 @@ Item {
                 color: "#2ecc71"
                 font.bold: true
                 elide: Text.ElideRight
-                Layout.maximumWidth: Kirigami.Units.gridUnit * 10
-            }
-
-            Item {
                 Layout.fillWidth: true
+                Layout.leftMargin: Kirigami.Units.smallSpacing * 2
             }
 
             // [+] becomes [✕] while the form is open
