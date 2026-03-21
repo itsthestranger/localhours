@@ -177,11 +177,7 @@ Current widget version is tracked in:
 
 Before publishing a release:
 
-1. Run install/update/uninstall smoke checks
-2. Verify service startup and D-Bus introspection
-3. Validate settings behavior and session edit flows
-4. Update changelog/release notes
-5. Tag release in Git
+Use the full checklist in [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
 
 ## License
 
