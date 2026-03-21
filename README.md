@@ -14,12 +14,12 @@ It uses a small Python daemon over D-Bus, stores data on disk in JSON, and avoid
 
 ## Screenshots
 
-```markdown
+
 ![Project list](docs/screenshots/project-list.png)
 
 
 ![Edit project](docs/screenshots/edit-project.png)
-```
+
 
 
 ## Requirements
