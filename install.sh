@@ -41,39 +41,66 @@ if [ "${PY_VER}" -lt 310 ]; then
     die "Python 3.10 or newer is required (found $(python3 --version))."
 fi
 
-# ── Install Python packages ───────────────────────────────────────────────────
-info "Installing Python dependencies…"
+python_deps_ok() {
+    python3 - <<'PY' >/dev/null 2>&1
+import gi
+import pydbus
+PY
+}
 
-if command -v pacman >/dev/null 2>&1; then
-    info "Arch-based distro detected. Checking system packages…"
-    MISSING_PKGS=()
-    pacman -Q python-pydbus  >/dev/null 2>&1 || MISSING_PKGS+=("python-pydbus")
-    pacman -Q python-gobject >/dev/null 2>&1 || MISSING_PKGS+=("python-gobject")
-    if [ "${#MISSING_PKGS[@]}" -gt 0 ]; then
-        warn "Missing system packages: ${MISSING_PKGS[*]}"
-        warn "Install them with: sudo pacman -S ${MISSING_PKGS[*]}"
-        warn "Falling back to pip install…"
-        pip3 install --break-system-packages pydbus PyGObject 2>/dev/null || \
-            warn "pip install failed. Please install pydbus and PyGObject manually."
-    else
-        info "System packages already present (python-pydbus, python-gobject). ✓"
-    fi
-elif command -v apt >/dev/null 2>&1; then
-    info "Debian/Ubuntu detected. Checking system packages…"
-    MISSING_PKGS=()
-    dpkg -s python3-pydbus >/dev/null 2>&1 || MISSING_PKGS+=("python3-pydbus")
-    dpkg -s python3-gi     >/dev/null 2>&1 || MISSING_PKGS+=("python3-gi")
-    if [ "${#MISSING_PKGS[@]}" -gt 0 ]; then
-        warn "Missing system packages: ${MISSING_PKGS[*]}"
-        warn "Install them with: sudo apt install ${MISSING_PKGS[*]}"
-        warn "Falling back to pip install…"
-        pip3 install --break-system-packages pydbus PyGObject 2>/dev/null || \
-            warn "pip install failed. Please install pydbus and PyGObject manually."
-    fi
+install_pip_fallback() {
+    command -v pip3 >/dev/null 2>&1 || die "pip3 not found. Install distro packages instead."
+    warn "Using pip fallback with --break-system-packages (explicitly opted in)."
+    pip3 install --break-system-packages pydbus PyGObject || \
+        die "pip fallback failed. Install pydbus and PyGObject via distro packages."
+    python_deps_ok || die "Python dependencies still not importable after pip fallback."
+    info "Python dependencies installed via pip fallback. ✓"
+}
+
+# ── Install Python packages ───────────────────────────────────────────────────
+info "Checking Python dependencies…"
+
+if python_deps_ok; then
+    info "Python dependencies already importable (pydbus, PyGObject). ✓"
 else
-    if command -v pip3 >/dev/null 2>&1; then
-        pip3 install --break-system-packages pydbus PyGObject 2>/dev/null || \
-            warn "pip install failed. Please install pydbus and PyGObject manually."
+    warn "Python dependencies are missing for this interpreter (pydbus, PyGObject)."
+    warn "Preferred fix: install distro packages listed below, then rerun this installer."
+
+    if command -v pacman >/dev/null 2>&1; then
+        info "Arch-based distro detected."
+        MISSING_PKGS=()
+        pacman -Q python-pydbus  >/dev/null 2>&1 || MISSING_PKGS+=("python-pydbus")
+        pacman -Q python-gobject >/dev/null 2>&1 || MISSING_PKGS+=("python-gobject")
+        if [ "${#MISSING_PKGS[@]}" -gt 0 ]; then
+            warn "Missing system packages: ${MISSING_PKGS[*]}"
+            warn "Install them with: sudo pacman -S ${MISSING_PKGS[*]}"
+        else
+            warn "System package check looks fine, but Python imports still fail."
+            warn "Reinstall suggested: sudo pacman -S python-pydbus python-gobject"
+        fi
+    elif command -v apt >/dev/null 2>&1; then
+        info "Debian/Ubuntu detected."
+        MISSING_PKGS=()
+        dpkg -s python3-pydbus >/dev/null 2>&1 || MISSING_PKGS+=("python3-pydbus")
+        dpkg -s python3-gi     >/dev/null 2>&1 || MISSING_PKGS+=("python3-gi")
+        if [ "${#MISSING_PKGS[@]}" -gt 0 ]; then
+            warn "Missing system packages: ${MISSING_PKGS[*]}"
+            warn "Install them with: sudo apt install ${MISSING_PKGS[*]}"
+        else
+            warn "System package check looks fine, but Python imports still fail."
+            warn "Reinstall suggested: sudo apt install --reinstall python3-pydbus python3-gi"
+        fi
+    else
+        warn "No supported package manager auto-hints found."
+        warn "Install pydbus + PyGObject with your distro's package manager."
+    fi
+
+    if [ "${LOCALHOURS_ALLOW_BREAK_SYSTEM_PACKAGES:-0}" = "1" ]; then
+        install_pip_fallback
+    fi
+
+    if ! python_deps_ok; then
+        die "Missing Python dependencies. Install distro packages and rerun.\nOptional (not recommended): LOCALHOURS_ALLOW_BREAK_SYSTEM_PACKAGES=1 ./install.sh"
     fi
 fi
 

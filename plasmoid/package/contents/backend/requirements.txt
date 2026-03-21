@@ -1,9 +1,18 @@
 # LocalHours - Backend Dependencies
-# Install with:
-#   pip install -r requirements.txt --break-system-packages
+# Preferred: install distro packages instead of modifying system Python.
+# If you need pip, prefer a virtual environment:
+#   python3 -m venv .venv
+#   . .venv/bin/activate
+#   pip install -r requirements.txt
 #
-# Or on Arch/CachyOS/Manjaro (preferred - uses system packages):
+# Arch/CachyOS/Manjaro:
 #   sudo pacman -S python-pydbus python-gobject
+#
+# Debian/Ubuntu:
+#   sudo apt install python3-pydbus python3-gi
+#
+# Last-resort system-wide fallback (explicit opt-in):
+#   pip install -r requirements.txt --break-system-packages
 
 pydbus>=0.6.0
 PyGObject>=3.42.0
