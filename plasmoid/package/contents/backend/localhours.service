@@ -1,0 +1,20 @@
+[Unit]
+Description=KDE LocalHours D-Bus Daemon
+# Documentation needs to be added still
+# Documentation=
+After=graphical-session.target
+PartOf=graphical-session.target
+# Prevent a bad data file from killing the service in a tight loop
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart=%h/.local/share/plasma/plasmoids/org.kde.plasma.localhours/contents/backend/daemon.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=graphical-session.target

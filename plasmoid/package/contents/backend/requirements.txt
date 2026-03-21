@@ -1,0 +1,9 @@
+# LocalHours - Backend Dependencies
+# Install with:
+#   pip install -r requirements.txt --break-system-packages
+#
+# Or on Arch/CachyOS/Manjaro (preferred - uses system packages):
+#   sudo pacman -S python-pydbus python-gobject
+
+pydbus>=0.6.0
+PyGObject>=3.42.0
