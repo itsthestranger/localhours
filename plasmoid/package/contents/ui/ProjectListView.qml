@@ -54,7 +54,6 @@ Item {
             PlasmaExtras.Heading {
                 level: 3
                 text: i18n("LocalHours")
-                Layout.fillWidth: true
             }
 
             // Live tracking badge — hidden while add form is open to save space
@@ -72,6 +71,10 @@ Item {
                 font.bold: true
                 elide: Text.ElideRight
                 Layout.maximumWidth: Kirigami.Units.gridUnit * 10
+            }
+
+            Item {
+                Layout.fillWidth: true
             }
 
             // [+] becomes [✕] while the form is open
