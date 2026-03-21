@@ -78,7 +78,7 @@ KCM.SimpleKCM {
             QQC2.Label {
                 text: maxHoursSpinBox.value === 0
                     ? i18n("⚠ No cap: timers will run indefinitely if not stopped manually.")
-                    : i18n("Sessions exceeding this limit are capped on daemon startup or hourly check.")
+                    : i18n("Sessions exceeding this limit are capped on daemon startup or periodic checks while tracking.")
                 font: Kirigami.Theme.smallFont
                 color: maxHoursSpinBox.value === 0
                     ? Kirigami.Theme.neutralTextColor
@@ -95,7 +95,7 @@ KCM.SimpleKCM {
 
         QQC2.Label {
             Kirigami.FormData.label: ""
-            text: i18n("Note: Changes to data file path or max session hours take effect after\nrestarting the backend daemon:\n  systemctl --user restart localhours")
+            text: i18n("Note: Changes to data file path and max session hours are applied immediately while the backend daemon is running.\nIf the daemon is stopped, they take effect on the next start.")
             font: Kirigami.Theme.smallFont
             color: Kirigami.Theme.disabledTextColor
             wrapMode: Text.WordWrap
