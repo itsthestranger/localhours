@@ -11,7 +11,7 @@
         "Description": "A lightweight, privacy-respecting time tracker living in your KDE Plasma panel. All data stays local.",
         "Icon": "chronometer",
         "Id": "org.kde.plasma.localhours",
-        "License": "GPL-2.0-or-later",
+        "License": "MIT",
         "Name": "LocalHours",
         "Version": "1.0.0",
         "Website": ""
