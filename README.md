@@ -18,7 +18,7 @@ It uses a small Python daemon over D-Bus, stores data on disk in JSON, and avoid
 - Add the project list popup screenshot here
 - Add the edit-project/session-history screenshot here
 
-Example placeholder format:
+placeholder:
 
 ```markdown
 ![Project list](docs/screenshots/project-list.png)
@@ -80,7 +80,8 @@ Tracked data is preserved unless you explicitly remove it during uninstall.
 If UI changes do not appear immediately, restart Plasma shell:
 
 ```bash
-kquitapp6 plasmashell && kstart6 plasmashell
+kquitapp6 plasmashell
+kstart plasmashell
 ```
 
 ## Uninstall
@@ -158,26 +159,6 @@ If the widget cannot talk to daemon:
 - Verify service file exists at `~/.config/systemd/user/localhours.service`
 - Run `systemctl --user daemon-reload` after service changes
 
-## Contributing
-
-Contributions are welcome via issues and pull requests.
-
-Suggested workflow:
-
-1. Create a topic branch
-2. Make focused commits with clear messages
-3. Include reproduction/verification steps in PR description
-4. Keep UI and backend behavior consistent (QML + daemon contracts)
-
-## Release and Versioning
-
-Current widget version is tracked in:
-
-- `plasmoid/package/metadata.json` (`KPlugin.Version`)
-
-Before publishing a release:
-
-Use the full checklist in [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
 
 ## License
 
