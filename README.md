@@ -14,10 +14,10 @@ It uses a small Python daemon over D-Bus, stores data on disk in JSON, and avoid
 
 ## Screenshots
 
-
+#### Project List
 ![Project list](docs/screenshots/project-list.png)
 
-
+#### Edit Project
 ![Edit project](docs/screenshots/edit-project.png)
 
 
