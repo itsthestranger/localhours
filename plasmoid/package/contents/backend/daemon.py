@@ -364,21 +364,27 @@ class TimeTrackerDaemon:
 
     def AddProject(self, name: str, color: str) -> str:
         """Create a new project, return its UUID."""
-        if not name.strip():
+        if not isinstance(name, str) or not name.strip():
             logging.warning("AddProject called with empty name; ignoring.")
             return self._result_error("Project name cannot be empty")
+        try:
+            normalized_color = self._normalize_color(color)
+        except ValueError as exc:
+            logging.warning("AddProject called with invalid color '%s': %s", color, exc)
+            return self._result_error(str(exc))
+        normalized_name = name.strip()
         project_id = str(uuid.uuid4())
         project = {
             "id": project_id,
-            "name": name.strip(),
-            "color": color.strip() if color.strip() else "#3498db",
+            "name": normalized_name,
+            "color": normalized_color,
             "display_preferences": dict(DEFAULT_DISPLAY_PREFERENCES),
             "sessions": [],
         }
         self._data["projects"].append(project)
         self._save_data()
         self.DataChanged(json.dumps(self._data))
-        logging.info("Added project '%s' (id=%s)", name, project_id)
+        logging.info("Added project '%s' (id=%s)", normalized_name, project_id)
         return self._result_ok(id=project_id)
 
     def UpdateProject(self, project_id: str, data_json: str) -> str:
