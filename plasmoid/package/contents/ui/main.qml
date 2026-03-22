@@ -369,7 +369,7 @@ PlasmoidItem {
     // -------------------------------------------------------------------------
     toolTipMainText: {
         if (!root.daemonAvailable)
-            return i18n("LocalHours — daemon not running")
+            return i18n("LocalHours — backend unavailable")
         if (root.activeTracking) {
             var p = root.projects.find(function(x) {
                 return x.id === root.activeTracking.project_id
@@ -381,7 +381,7 @@ PlasmoidItem {
 
     toolTipSubText: {
         if (!root.daemonAvailable)
-            return i18n("Start the daemon:\n  systemctl --user start localhours")
+            return i18n("LocalHours attempts to start the backend automatically. If this persists, check Python dependencies (pydbus, PyGObject).")
         if (root.activeTracking)
             return i18n("Current session: ") + root.formatDuration(root.elapsedSeconds)
         // Idle: show top 2 projects by this-week time

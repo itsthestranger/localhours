@@ -129,7 +129,9 @@ Behavior notes:
 - UI: QML plasmoid (`plasmoid/package/contents/ui/*.qml`)
 - Bridge: Plasma executable data engine runs `tracker-client.py`
 - Backend daemon: `daemon.py` (D-Bus service `org.kde.plasma.localhours`)
-- Service manager: systemd user unit (`localhours.service`)
+- Backend startup:
+  - `tracker-client.py` auto-starts `daemon.py` on demand if D-Bus is unavailable
+  - Optional managed mode via systemd user unit (`localhours.service`)
 - Persistence: local JSON file on disk
 
 ## Troubleshooting
@@ -161,8 +163,9 @@ gdbus introspect --session --dest org.kde.plasma.localhours --object-path /org/k
 If the widget cannot talk to daemon:
 
 - Ensure required Python packages are importable by `python3`
-- Verify service file exists at `~/.config/systemd/user/localhours.service`
-- Run `systemctl --user daemon-reload` after service changes
+- For direct `.plasmoid` installs, open the widget once to trigger backend auto-start
+- If using systemd-managed mode, verify service file exists at `~/.config/systemd/user/localhours.service`
+- If using systemd-managed mode, run `systemctl --user daemon-reload` after service changes
 
 
 ## License

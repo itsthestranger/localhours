@@ -17,6 +17,9 @@ Usage:
 
 import sys
 import json
+import time
+import subprocess
+from pathlib import Path
 
 try:
     from pydbus import SessionBus
@@ -26,11 +29,62 @@ except ImportError:
 
 DBUS_NAME = "org.kde.plasma.localhours"
 DBUS_PATH = "/org/kde/plasma/localhours"
+AUTOSTART_WAIT_SECONDS = 3.0
+AUTOSTART_POLL_INTERVAL = 0.1
+
+
+def _try_get_proxy():
+    bus = SessionBus()
+    return bus.get(DBUS_NAME, DBUS_PATH)
+
+
+def _daemon_script_path():
+    return Path(__file__).resolve().with_name("daemon.py")
+
+
+def _start_daemon_background():
+    daemon_script = _daemon_script_path()
+    if not daemon_script.exists():
+        return False, f"daemon script not found at {daemon_script}"
+
+    try:
+        subprocess.Popen(
+            [sys.executable, str(daemon_script)],
+            cwd=str(daemon_script.parent),
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            close_fds=True,
+            start_new_session=True,
+        )
+        return True, ""
+    except Exception as exc:
+        return False, str(exc)
 
 
 def get_proxy():
-    bus = SessionBus()
-    return bus.get(DBUS_NAME, DBUS_PATH)
+    try:
+        return _try_get_proxy()
+    except Exception as first_exc:
+        started, start_error = _start_daemon_background()
+        if not started:
+            raise RuntimeError(
+                f"Cannot connect to daemon: {first_exc}. "
+                f"Automatic backend start failed: {start_error}"
+            ) from first_exc
+
+        deadline = time.monotonic() + AUTOSTART_WAIT_SECONDS
+        last_exc = first_exc
+        while time.monotonic() < deadline:
+            try:
+                return _try_get_proxy()
+            except Exception as exc:
+                last_exc = exc
+                time.sleep(AUTOSTART_POLL_INTERVAL)
+
+        raise RuntimeError(
+            f"Cannot connect to daemon after automatic start attempt: {last_exc}"
+        ) from last_exc
 
 
 def print_json_result(result):
