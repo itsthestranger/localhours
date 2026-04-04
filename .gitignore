@@ -1,4 +1,6 @@
 backlog/
+docs/releases/
+build-plasmoid-release.sh
 
 # Python bytecode/cache artifacts
 __pycache__/

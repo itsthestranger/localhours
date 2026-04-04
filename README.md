@@ -34,6 +34,22 @@ It uses a small Python daemon over D-Bus, stores data on disk in JSON, and avoid
 
 ## Installation
 
+### Option A: Official widget install from `.plasmoid` (no script required)
+
+If you have the packaged file (for example `org.kde.plasma.localhours-1.0.0.plasmoid`), install it directly in Plasma:
+
+1. Right-click panel/taskbar.
+2. Select `Add or Manage Widgets...`.
+3. Choose `Install Widget From Local File...`.
+4. Select the `.plasmoid` file.
+5. Add the `LocalHours` widget.
+
+**Note**: Sometimes upon adding the `LocalHours` widget the first time it fails to add it to the task bar. If this happens, remove and add it again.
+
+In this mode, `install.sh` is not needed.
+
+### Option B: Repository install script (systemd-managed mode)
+
 From the repository root:
 
 ```bash
@@ -46,13 +62,6 @@ The installer performs:
 2. Widget package install via `kpackagetool6`
 3. User service install and start (`localhours.service`)
 4. D-Bus responsiveness check
-
-
-After running the installer you might have to add the widget. For this:
-
-1. Right-click on your taskbar.
-2. Select 'Add or Manage Widgets...'
-3. Add the LocalHours Widget
 
 ## Python Dependency Strategy
 
