@@ -44,7 +44,7 @@ If you have the packaged file (for example `org.kde.plasma.localhours-1.0.0.plas
 4. Select the `.plasmoid` file.
 5. Add the `LocalHours` widget.
 
-**Note**: Sometimes upon adding the `LocalHours` widget the first time it fails to add it to the task bar. If this happens, remove and add it again.
+**Note**: Sometimes upon adding the `LocalHours` widget the first time it fails to add it to the task bar. If this happens, remove it, exit the edit mode, reenter edit mode and add it again.
 
 In this mode, `install.sh` is not needed.
 
